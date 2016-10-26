@@ -8,6 +8,7 @@ import (
 	"path"
 	"sort"
 
+	"github.com/pkg/errors"
 	"github.com/urfave/cli"
 )
 
@@ -43,15 +44,21 @@ func main() {
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
 			Name:  "path",
-			Value: "hoge",
+			Value: "",
 			Usage: "set target path.",
+		},
+		cli.BoolFlag{
+			Name:  "delete",
+			Usage: "whether delele file or not. (default is false)",
 		},
 	}
 
 	app.Action = func(c *cli.Context) error {
 		fmt.Println(c.String("path"))
+		fmt.Println(c.Bool("delete"))
 
 		var argPath = c.String("path")
+		var argDelete = c.Bool("delete")
 
 		var curDir, _ = os.Getwd()
 		curDir += "/"
@@ -70,14 +77,16 @@ func main() {
 
 		if isDir == true {
 			dirName = dirName + filePattern
-			filePattern = ""
+			// filePattern = ""
+			filePattern = "backuplog_*"
 		}
 
 		fileInfos, err := ioutil.ReadDir(dirName)
 
 		if err != nil {
-			fmt.Errorf("Directory cannot read %s\n", err)
-			os.Exit(1)
+			// fmt.Errorf("Directory cannot read %s\n", err)
+			// os.Exit(1)
+			return errors.Wrap(err, "Directory cannot read") // Directory cannot read: open hoge: no such file or directory
 		}
 
 		sort.Sort(ByName{fileInfos})
@@ -90,7 +99,16 @@ func main() {
 			}
 
 			if matched == true {
-				fmt.Printf("%s\n", findName)
+				fmt.Printf("delete file is %s\n", findName)
+
+				if argDelete == true {
+					fmt.Println("delete!!")
+
+					if err := os.Remove(argPath + "/" + findName); err != nil {
+						return errors.Wrap(err, "Can not delete file")
+					}
+				}
+
 			}
 		}
 

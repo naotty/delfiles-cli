@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"os"
+	"time"
 
 	"io/ioutil"
 	"path"
@@ -35,6 +36,19 @@ func IsDirectory(name string) (isDir bool, err error) {
 	return fInfo.IsDir(), nil
 }
 
+func isOld(fileTimeStamp time.Time, elaspedDays int) bool {
+	base := time.Now().AddDate(0, 0, elaspedDays*-1)
+	fmt.Printf("base date is %s\n", base)
+
+	if base.Before(fileTimeStamp) {
+		fmt.Println("file is new.")
+		return false
+	}
+
+	fmt.Println("file is old.")
+	return true
+}
+
 func main() {
 	app := cli.NewApp()
 	app.Name = "delete files"
@@ -51,20 +65,26 @@ func main() {
 			Name:  "delete",
 			Usage: "whether delele file or not. (default is false)",
 		},
+		cli.IntFlag{
+			Name:  "days",
+			Usage: "set elasped days of delete files.",
+		},
 	}
 
 	app.Action = func(c *cli.Context) error {
-		fmt.Println(c.String("path"))
-		fmt.Println(c.Bool("delete"))
-
 		var argPath = c.String("path")
 		var argDelete = c.Bool("delete")
+		var argDays = c.Int("days")
 
 		var curDir, _ = os.Getwd()
 		curDir += "/"
 
 		if argPath == "" {
 			argPath = curDir
+		}
+
+		if argDays == 0 {
+			argDays = 7
 		}
 
 		var dirName, filePattern = path.Split(argPath)
@@ -77,7 +97,6 @@ func main() {
 
 		if isDir == true {
 			dirName = dirName + filePattern
-			// filePattern = ""
 			filePattern = "backuplog_*"
 		}
 
@@ -99,6 +118,14 @@ func main() {
 			}
 
 			if matched == true {
+
+				// check timestamp
+				fmt.Printf("timestamp is %s\n", fileInfo.ModTime())
+
+				if isOld(fileInfo.ModTime(), argDays) == false {
+					continue
+				}
+
 				fmt.Printf("delete file is %s\n", findName)
 
 				if argDelete == true {

@@ -38,15 +38,11 @@ func IsDirectory(name string) (isDir bool, err error) {
 
 func isOld(fileTimeStamp time.Time, elaspedDays int) bool {
 	base := time.Now().AddDate(0, 0, elaspedDays*-1)
-	fmt.Printf("base date is %s\n", base)
-
 	if base.Before(fileTimeStamp) {
-		fmt.Println("file is new.")
-		return false
+		return false // file is new.
 	}
 
-	fmt.Println("file is old.")
-	return true
+	return true // file is old.
 }
 
 func main() {
@@ -87,6 +83,10 @@ func main() {
 			argDays = 7
 		}
 
+		if argDelete == false {
+			fmt.Println("Dry-Run")
+		}
+
 		var dirName, filePattern = path.Split(argPath)
 
 		if dirName == "" {
@@ -103,8 +103,6 @@ func main() {
 		fileInfos, err := ioutil.ReadDir(dirName)
 
 		if err != nil {
-			// fmt.Errorf("Directory cannot read %s\n", err)
-			// os.Exit(1)
 			return errors.Wrap(err, "Directory cannot read") // Directory cannot read: open hoge: no such file or directory
 		}
 
@@ -120,20 +118,18 @@ func main() {
 			if matched == true {
 
 				// check timestamp
-				fmt.Printf("timestamp is %s\n", fileInfo.ModTime())
-
 				if isOld(fileInfo.ModTime(), argDays) == false {
 					continue
 				}
 
-				fmt.Printf("delete file is %s\n", findName)
+				fmt.Printf("delete %s timestamp: %s\n", findName, fileInfo.ModTime())
 
 				if argDelete == true {
-					fmt.Println("delete!!")
-
 					if err := os.Remove(argPath + "/" + findName); err != nil {
 						return errors.Wrap(err, "Can not delete file")
 					}
+
+					fmt.Println("deleted!!")
 				}
 
 			}
